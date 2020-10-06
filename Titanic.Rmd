@@ -1,0 +1,387 @@
+---
+title: "EDA Titanic Dataset"
+author: "Arshdeep Singh"
+date: "06/10/2020"
+output: html_document
+---
+
+## Introduction to the dataset
+
+This dataset includes information about the passengers of RMS Titanic and also have info about is that particular passenger survived or not. For every individual person we have information about -
+
+* **survived** - Person survived or not (0 for No and 1 for Yes) (Integer)
+* **pclass** - With what class of ticket the passenger was traveling (in numbers) (Integer)
+* **sex** - Male or Female (Character)
+* **age** - Age of passenger in years (Double)
+* **sibsp** - Number of siblings/spouse on Titanic (Integer)
+* **parch** - Number of parent or children (Integer)
+* **fare** - Amount of money person paid to travel (Double)
+* **embarked** - Port of Embarkation (C = Cherbourg, Q = Queenstown, S = Southampton) (Character)
+* **class** - With what class of ticket the passenger was travelling (in words) (Character)
+* **who** - Man or Women or Child (Character)
+* **adult_male** - Is the passenger an adult male (Logical)
+* **deck** - Deck letter (9 levels A-G) (Character)
+* **embark_town** - Port of Embarkation (Cherbourg, Queenstown, Southhampton) (Character)
+* **alive** - Is the person alive (Character)
+* **alone** - Was the person traveling alone (Logical) 
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(knitr)
+```
+
+## Install and load packages
+
+``` {r}
+library(data.table)
+library(ggplot2)
+```
+
+## Import the dataset
+
+```{r, eval = FALSE}
+dataset <- fread("titanic.csv")
+head(dataset)
+```
+```{r, echo = FALSE}
+dataset <- fread("titanic.csv")
+kable(head(dataset))
+```
+
+## Add NA to 'deck' feature
+The 'deck' feature contains empty spaces instead of NA, so we substitute empty spaces with NA
+
+```{r}
+dataset$deck[dataset$deck == ""] <- NA
+```
+
+## Check Number of NA in each feature
+
+```{r, comment = " "}
+colSums(is.na(dataset))
+```
+
+
+## Summary of the dataset
+
+```{r, comment = " "}
+summary(dataset)
+```
+
+
+## Convert categorical features to factors
+
+```{r}
+dataset$pclass <- as.factor(dataset$pclass)
+dataset$survived <- as.factor(dataset$survived)
+dataset$sex <- as.factor(dataset$sex)
+dataset$who <- as.factor(dataset$who)
+dataset$embarked <- as.factor(dataset$embarked)
+dataset$sibsp <- as.factor(dataset$sibsp)
+dataset$parch <- as.factor(dataset$parch)
+dataset$adult_male <- as.factor(dataset$adult_male)
+dataset$embark_town <- as.factor(dataset$embark_town)
+dataset$alive <- as.factor(dataset$alive)
+dataset$alone <- as.factor(dataset$alone)
+dataset$class <- as.factor(dataset$class)
+dataset$deck <- as.factor(dataset$deck)
+```
+
+## Check structure of dataset
+
+```{r, comment = " "}
+str(dataset)
+```
+
+## Impute 'age' feature with respect to 'pclass'
+
+```{r, warning = FALSE}
+box_plot <- ggplot(dataset, aes(x = pclass, y = age), na.exclude = TRUE) + 
+geom_boxplot() + 
+scale_y_continuous(breaks = round(seq(min(dataset$age, na.rm = TRUE), 
+                                      max(dataset$age, na.rm = TRUE), 
+                                      by = 4), 
+                                  1))
+
+box_plot
+```
+```{r}
+for(i in 1:length(dataset$age)){
+    if(is.na(dataset$age[i])){
+        if(dataset$pclass[i] == 1){
+            dataset$age[i] <- 37
+        }
+        else if(dataset$pclass[i] == 2){
+            dataset$age[i] <- 29
+        }
+        else{
+            dataset$age[i] <- 24
+        }
+    }
+}
+```
+
+## Survival rate with respect to sex
+
+```{r}
+ggplot(data = dataset, aes(x = sex, fill = survived)) + 
+geom_bar() + 
+scale_fill_discrete(name = "Survived", labels = c("No", "Yes")) +
+scale_y_continuous(breaks = round(seq(0, 600, by = 50), 1))
+```
+```{r}
+females_count = 0
+males_count = 0
+females_survived = 0
+males_survived = 0
+
+for(i in 1:length(dataset$sex)){
+    if(dataset$sex[i] == 'male'){
+        males_count = males_count + 1
+        if(dataset$survived[i] == 1){
+            males_survived = males_survived + 1
+        }
+    }
+    else{
+        females_count = females_count + 1
+        if(dataset$survived[i] == 1){
+            females_survived = females_survived + 1
+        }
+    }
+}
+
+print(paste("Total number of males: ", males_count))
+print(paste("Total number of females: ", females_count))
+print(paste("Number of males who survived: ", males_survived))
+print(paste("Number of females who survived: ", females_survived))
+print(paste("Percentage of males who survived: ", round(males_survived / males_count, 2)))
+print(paste("Precentage of females who survived: ", round(females_survived / females_count, 2)))
+```
+
+## Survival rate with respect to class
+
+```{r}
+ggplot(data = dataset, aes(x = pclass, fill = survived)) +
+geom_bar() + 
+scale_fill_discrete(name = "Survived", labels = c("No", "Yes")) +
+scale_y_continuous(breaks = round(seq(0, 500, by = 50), 1))
+```
+```{r}
+class1_number = 0
+class2_number = 0
+class3_number = 0
+class1_survived = 0
+class2_survived = 0
+class3_survived = 0
+
+for(i in 1:length(dataset$pclass)){
+    if(dataset$pclass[i] == 1){
+        class1_number = class1_number + 1
+        if(dataset$survived[i] == 1){
+            class1_survived = class1_survived + 1
+        }
+    }
+    else if(dataset$pclass[i] == 2){
+        class2_number = class2_number + 1
+        if(dataset$survived[i] == 1){
+            class2_survived = class2_survived + 1
+        }
+    }
+    else{
+        class3_number = class3_number + 1
+        if(dataset$survived[i] == 1){
+            class3_survived = class3_survived + 1
+        }
+    }
+}
+
+print(paste("Total number of people in class 1: ", class1_number))
+print(paste("Total number of people in class 2: ", class2_number))
+print(paste("Total number of people in class 3: ", class3_number))
+print(paste("Number of people in class 1 who survived: ", class1_survived))
+print(paste("Number of people in class 2 who survived: ", class2_survived))
+print(paste("Number of people in class 3 who survived: ", class3_survived))
+print(paste("Percentage of people in class 1 who survived: ", round(class1_survived / class1_number, 2)))
+print(paste("Percentage of people in class 2 who survived: ", round(class2_survived / class2_number, 2)))
+print(paste("Percentage of people in class 3 who survived: ", round(class3_survived / class3_number, 2)))
+```
+
+## Plot 'age' with respect to 'survived' and 'who'
+
+```{r}
+ggplot(data = dataset, aes(x = age, y = survived,color = who)) +
+geom_point()
+```
+
+## Plot 'age' with respect to 'survived' and 'sex'
+
+```{r}
+ggplot(data = dataset, aes(x = age, y = survived,color = sex)) +
+geom_point()
+```
+
+## Plot 'age' with respect to 'survived' and 'pclass'
+
+```{r}
+ggplot(data = dataset, aes(x = age, y = survived,color = pclass)) +
+geom_point()
+```
+
+## Survival rate with respect 'who'
+
+```{r}
+ggplot(data = dataset, aes(x = who, fill = survived)) +
+geom_bar() + 
+scale_y_continuous(breaks = round(seq(0, 550, by = 50), 1))
+```
+```{r}
+men_count = 0
+women_count = 0
+children_count = 0
+men_survived = 0
+women_survived = 0
+children_survived = 0
+
+for(i in 1:length(dataset$who)){
+    if(dataset$who[i] == "child"){
+        children_count = children_count + 1
+        if(dataset$survived[i] == 1){
+            children_survived = children_survived + 1
+        }
+    }
+    else if(dataset$who[i] == "man"){
+        men_count = men_count + 1
+        if(dataset$survived[i] == 1){
+            men_survived = men_survived + 1
+        }
+    }
+    else{
+        women_count = women_count + 1
+        if(dataset$survived[i] == 1){
+            women_survived = women_survived + 1
+        }
+    }
+}
+
+print(paste("Total number of children: ", children_count))
+print(paste("Total number of men: ", men_count))
+print(paste("Total number of women: ", women_count))
+print(paste("Number children who survived: ", children_survived))
+print(paste("Number of men who  survived: ", men_survived))
+print(paste("Number of women who  survived: ", women_survived))
+print(paste("Percentage of children who survived: ", round(children_survived / children_count, 2)))
+print(paste("Percentage of men who  survived: ", round(men_survived / men_count, 2)))
+print(paste("Percentage of women who survived: ", round(women_survived / women_count, 2)))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
